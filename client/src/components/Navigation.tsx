@@ -1,79 +1,126 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
+import { Menu, X, User, ShoppingCart, Wrench, BarChart3, Truck, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu } from "lucide-react";
 
 export default function Navigation() {
   const [location] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
 
-  const navItems = [
-    { path: "/products", label: "Products" },
-    { path: "/trade-in", label: "Trade-In" },
-    { path: "/services", label: "Services" },
-    { path: "/admin", label: "Admin" },
-    { path: "/fleet", label: "Fleet Portal" },
+  const navigation = [
+    { name: "Home", href: "/", icon: ShoppingCart },
+    { name: "Products", href: "/products", icon: ShoppingCart },
+    { name: "Trade-In", href: "/trade-in", icon: Truck },
+    { name: "Services", href: "/services", icon: Wrench },
+    { name: "Admin", href: "/admin", icon: BarChart3 },
+    { name: "Fleet", href: "/fleet", icon: Truck },
   ];
 
-  const NavLink = ({ path, label, mobile = false }: { path: string; label: string; mobile?: boolean }) => {
-    const isActive = location === path;
-    const baseClasses = "nav-link transition-colors font-medium";
-    const desktopClasses = "text-neutral-900 hover:text-primary px-3 py-2 rounded-md text-sm";
-    const mobileClasses = "block text-neutral-900 hover:text-primary px-3 py-2 rounded-md text-base";
-    const activeClasses = isActive ? "text-primary" : "";
-
-    return (
-      <Link
-        href={path}
-        className={`${baseClasses} ${mobile ? mobileClasses : desktopClasses} ${activeClasses}`}
-        onClick={() => mobile && setIsOpen(false)}
-      >
-        {label}
-      </Link>
-    );
+  const isActive = (href: string) => {
+    if (href === "/") return location === "/";
+    return location.startsWith(href);
   };
 
   return (
-    <nav className="bg-white shadow-lg sticky top-0 z-50">
+    <nav className="bg-white shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <div className="text-2xl font-bold text-primary flex items-center">
-              <svg className="w-8 h-8 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2L2 7v10c0 5.55 3.84 9.74 9 10.5V19h2v-1.5c5.16-.76 9-4.95 9-10.5V7l-10-5z"/>
-              </svg>
-              Skavtech
+            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-xl">S</span>
             </div>
+            <span className="ml-2 text-xl font-bold text-neutral-900">Skavtech</span>
           </Link>
-          
+
           {/* Desktop Navigation */}
-          <div className="hidden md:block">
-            <div className="ml-10 flex items-baseline space-x-4">
-              {navItems.map((item) => (
-                <NavLink key={item.path} path={item.path} label={item.label} />
-              ))}
-            </div>
+          <div className="hidden md:flex items-center space-x-8">
+            {navigation.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isActive(item.href)
+                      ? "text-primary bg-primary/10"
+                      : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{item.name}</span>
+                </Link>
+              );
+            })}
           </div>
-          
-          {/* Mobile menu button */}
-          <div className="md:hidden">
-            <Sheet open={isOpen} onOpenChange={setIsOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Menu className="h-6 w-6" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-64">
-                <div className="flex flex-col space-y-1 mt-6">
-                  {navItems.map((item) => (
-                    <NavLink key={item.path} path={item.path} label={item.label} mobile />
-                  ))}
+
+          {/* Auth Buttons */}
+          <div className="hidden md:flex items-center space-x-4">
+            <Link href="/signup">
+              <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <UserPlus className="h-4 w-4" />
+                Sign Up
+              </Button>
+            </Link>
+            <Button size="sm" className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              Sign In
+            </Button>
+          </div>
+
+          {/* Mobile Menu */}
+          <Sheet open={isOpen} onOpenChange={setIsOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm" className="md:hidden">
+                <Menu className="h-4 w-4" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-80">
+              <div className="flex flex-col h-full">
+                <div className="flex items-center justify-between p-6 border-b">
+                  <span className="text-lg font-semibold">Menu</span>
                 </div>
-              </SheetContent>
-            </Sheet>
-          </div>
+                
+                <div className="flex-1 py-6">
+                  <div className="space-y-2">
+                    {navigation.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <Link
+                          key={item.name}
+                          href={item.href}
+                          onClick={() => setIsOpen(false)}
+                          className={`flex items-center space-x-3 px-6 py-3 text-sm font-medium transition-colors ${
+                            isActive(item.href)
+                              ? "text-primary bg-primary/10 border-r-2 border-primary"
+                              : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50"
+                          }`}
+                        >
+                          <Icon className="h-5 w-5" />
+                          <span>{item.name}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Mobile Auth Buttons */}
+                <div className="border-t p-6 space-y-3">
+                  <Link href="/signup" onClick={() => setIsOpen(false)}>
+                    <Button variant="outline" className="w-full flex items-center gap-2">
+                      <UserPlus className="h-4 w-4" />
+                      Sign Up
+                    </Button>
+                  </Link>
+                  <Button className="w-full flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Sign In
+                  </Button>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </nav>

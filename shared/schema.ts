@@ -8,6 +8,9 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   role: text("role").notNull().default("customer"), // customer, admin, technician
   email: text("email"),
+  phoneNumber: text("phone_number"),
+  accountType: text("account_type").default("individual"), // individual, business
+  companyName: text("company_name"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

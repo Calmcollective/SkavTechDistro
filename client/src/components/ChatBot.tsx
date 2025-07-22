@@ -1,15 +1,13 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { MessageCircle, X, Send, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageCircle, X, Send, Bot } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
 
 interface Message {
-  id: string;
-  content: string;
+  id: number;
+  text: string;
   isBot: boolean;
   timestamp: Date;
 }
@@ -18,179 +16,142 @@ export default function ChatBot() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: "1",
-      content: "Hello! I'm SkavBot, your AI assistant. How can I help you today?",
+      id: 1,
+      text: "Hi! I'm SkavBot, your AI assistant. How can I help you today?",
       isBot: true,
       timestamp: new Date(),
     },
   ]);
-  const [inputMessage, setInputMessage] = useState("");
+  const [inputValue, setInputValue] = useState("");
 
-  const sendMessageMutation = useMutation({
-    mutationFn: async (message: string) => {
-      const response = await apiRequest("POST", "/api/chatbot", { message });
-      return response.json();
-    },
-    onSuccess: (data) => {
-      setMessages(prev => [...prev, {
-        id: Date.now().toString() + "_bot",
-        content: data.response,
-        isBot: true,
-        timestamp: new Date(),
-      }]);
-    },
-    onError: () => {
-      setMessages(prev => [...prev, {
-        id: Date.now().toString() + "_bot",
-        content: "I'm sorry, I'm having trouble responding right now. Please try again later or contact our support team.",
-        isBot: true,
-        timestamp: new Date(),
-      }]);
-    },
-  });
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputValue.trim()) return;
 
-  const handleSendMessage = () => {
-    if (!inputMessage.trim()) return;
-
+    // Add user message
     const userMessage: Message = {
-      id: Date.now().toString(),
-      content: inputMessage,
+      id: Date.now(),
+      text: inputValue.trim(),
       isBot: false,
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
-    sendMessageMutation.mutate(inputMessage);
-    setInputMessage("");
+    setMessages((prev) => [...prev, userMessage]);
+    setInputValue("");
+
+    // Simulate bot response
+    setTimeout(() => {
+      const botResponse = getBotResponse(inputValue.trim());
+      const botMessage: Message = {
+        id: Date.now() + 1,
+        text: botResponse,
+        isBot: true,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, botMessage]);
+    }, 1000);
   };
 
-  const handleQuickAction = (action: string) => {
-    const quickMessages: Record<string, string> = {
-      warranty: "I need help checking my warranty status",
-      product: "Can you tell me about your products?",
-      tradein: "I want to get a trade-in valuation",
-    };
-
-    const message = quickMessages[action] || action;
-    setInputMessage(message);
-    handleSendMessage();
+  const getBotResponse = (userInput: string): string => {
+    const input = userInput.toLowerCase();
+    
+    if (input.includes("warranty") || input.includes("guarantee")) {
+      return "You can check your warranty status using your device serial number in the Services section. Our warranty covers hardware defects for up to 2 years depending on the product.";
+    }
+    
+    if (input.includes("trade") || input.includes("sell")) {
+      return "Our trade-in program offers competitive prices for your used devices! Visit the Trade-In section to get an instant quote. We support pickup anywhere in Kenya.";
+    }
+    
+    if (input.includes("repair") || input.includes("fix")) {
+      return "We offer comprehensive repair services for all ICT devices. You can submit a repair request in the Services section and track its progress in real-time.";
+    }
+    
+    if (input.includes("price") || input.includes("cost")) {
+      return "Our prices are competitive with market rates. Check out our Products section for current pricing on new and refurbished devices. We also offer bulk discounts for corporate clients.";
+    }
+    
+    if (input.includes("fleet") || input.includes("business")) {
+      return "Our Fleet Management portal is perfect for businesses! It offers device tracking, warranty management, and bulk operations. Contact us to set up your corporate account.";
+    }
+    
+    return "I understand you're looking for help! You can browse our products, submit trade-in requests, check warranties, or manage your fleet. Is there something specific I can help you find?";
   };
+
+  if (!isOpen) {
+    return (
+      <Button
+        onClick={() => setIsOpen(true)}
+        className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-lg z-50"
+      >
+        <MessageCircle className="h-6 w-6" />
+      </Button>
+    );
+  }
 
   return (
-    <div className="fixed bottom-4 right-4 z-50">
-      {/* Chat Toggle Button */}
-      <Button
-        onClick={() => setIsOpen(!isOpen)}
-        className="rounded-full w-14 h-14 shadow-lg bg-primary hover:bg-primary/90"
-        size="icon"
-      >
-        {isOpen ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
-      </Button>
-
-      {/* Chat Window */}
-      {isOpen && (
-        <Card className="absolute bottom-16 right-0 w-80 h-96 flex flex-col shadow-2xl">
-          <CardHeader className="bg-primary text-white p-4 rounded-t-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center mr-3">
-                  <Bot className="h-4 w-4" />
-                </div>
-                <div>
-                  <div className="font-semibold">SkavBot</div>
-                  <div className="text-xs opacity-90">AI Assistant</div>
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsOpen(false)}
-                className="text-white/80 hover:text-white hover:bg-white/20"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+    <div className="fixed bottom-6 right-6 w-80 sm:w-96 h-96 z-50">
+      <Card className="h-full shadow-xl">
+        <CardHeader className="p-4 bg-primary text-white rounded-t-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Bot className="h-5 w-5" />
+              <CardTitle className="text-lg">SkavBot</CardTitle>
             </div>
-          </CardHeader>
-
-          <CardContent className="flex-1 p-0 flex flex-col">
-            <ScrollArea className="flex-1 p-4">
-              <div className="space-y-4">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex items-start ${message.isBot ? "" : "justify-end"}`}
-                  >
-                    {message.isBot && (
-                      <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center mr-2 flex-shrink-0">
-                        <Bot className="h-3 w-3 text-white" />
-                      </div>
-                    )}
-                    <div
-                      className={`rounded-lg p-3 max-w-xs ${
-                        message.isBot
-                          ? "bg-neutral-100 text-neutral-900"
-                          : "bg-primary text-white"
-                      }`}
-                    >
-                      <p className="text-sm">{message.content}</p>
-                    </div>
-                  </div>
-                ))}
-                
-                {/* Quick Actions */}
-                {messages.length === 1 && (
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleQuickAction("warranty")}
-                      className="text-xs"
-                    >
-                      Check Warranty
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleQuickAction("product")}
-                      className="text-xs"
-                    >
-                      Product Info
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleQuickAction("tradein")}
-                      className="text-xs"
-                    >
-                      Trade-In Value
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
-
-            <div className="border-t p-4">
-              <div className="flex space-x-2">
-                <Input
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  placeholder="Type your message..."
-                  className="flex-1 text-sm"
-                  onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-                  disabled={sendMessageMutation.isPending}
-                />
-                <Button
-                  size="icon"
-                  onClick={handleSendMessage}
-                  disabled={!inputMessage.trim() || sendMessageMutation.isPending}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsOpen(false)}
+              className="text-white hover:bg-primary/20 h-8 w-8 p-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardHeader>
+        
+        <CardContent className="p-0 flex flex-col h-full">
+          <ScrollArea className="flex-1 p-4">
+            <div className="space-y-4">
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex ${message.isBot ? "justify-start" : "justify-end"}`}
                 >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
+                  <div
+                    className={`max-w-[80%] p-3 rounded-lg ${
+                      message.isBot
+                        ? "bg-neutral-100 text-neutral-900"
+                        : "bg-primary text-white"
+                    }`}
+                  >
+                    <p className="text-sm">{message.text}</p>
+                    <p className="text-xs opacity-70 mt-1">
+                      {message.timestamp.toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </ScrollArea>
+          
+          <div className="p-4 border-t">
+            <form onSubmit={handleSendMessage} className="flex gap-2">
+              <Input
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="Type your message..."
+                className="flex-1"
+              />
+              <Button type="submit" size="sm" className="px-3">
+                <Send className="h-4 w-4" />
+              </Button>
+            </form>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

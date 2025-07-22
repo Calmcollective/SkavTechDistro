@@ -7,7 +7,8 @@ import {
   insertWarrantySchema,
   insertRepairTicketSchema,
   insertTradeInSchema,
-  insertFleetDeviceSchema
+  insertFleetDeviceSchema,
+  insertUserSchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -281,6 +282,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ response });
     } catch (error) {
       res.status(500).json({ message: "Chatbot service temporarily unavailable" });
+    }
+  });
+
+  // Authentication endpoints
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      // Basic validation for Kenyan phone numbers
+      const { phoneNumber, countryCode, ...userData } = req.body;
+      
+      if (countryCode !== "+254") {
+        return res.status(400).json({ 
+          message: "Registration is currently only available for Kenya (+254). We'll be expanding to other countries soon!"
+        });
+      }
+
+      // Validate Kenyan phone number format
+      const kenyanPhoneRegex = /^\+254[0-9]{9}$/;
+      const fullPhoneNumber = `${countryCode}${phoneNumber}`;
+      
+      if (!kenyanPhoneRegex.test(fullPhoneNumber)) {
+        return res.status(400).json({ 
+          message: "Please enter a valid Kenyan phone number (e.g., +254700123456)"
+        });
+      }
+
+      const validatedData = insertUserSchema.parse({
+        ...userData,
+        phoneNumber: fullPhoneNumber
+      });
+      
+      const user = await storage.createUser(validatedData);
+      
+      // Don't return password in response
+      const { password, ...userResponse } = user;
+      
+      res.status(201).json({ 
+        message: "Account created successfully",
+        user: userResponse
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid registration data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create account" });
+    }
+  });
+
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ message: "Username and password are required" });
+      }
+
+      // In a real app, you'd verify the password with bcrypt
+      // For now, this is a placeholder
+      const users = await storage.getUsers();
+      const user = users.find(u => u.username === username);
+      
+      if (!user || user.password !== password) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // Don't return password in response
+      const { password: _, ...userResponse } = user;
+      
+      res.json({ 
+        message: "Login successful",
+        user: userResponse
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Login failed" });
     }
   });
 
