@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Menu, X, User, ShoppingCart, Wrench, BarChart3, Truck, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import skavtechLogo from "../assets/skavtech-logo.png";
 
 export default function Navigation() {
   const [location] = useLocation();
@@ -28,10 +29,11 @@ export default function Navigation() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">S</span>
-            </div>
-            <span className="ml-2 text-xl font-bold text-neutral-900">Skavtech</span>
+            <img 
+              src={skavtechLogo} 
+              alt="Skavtech Solutions Ltd" 
+              className="h-10 w-auto"
+            />
           </Link>
 
           {/* Desktop Navigation */}

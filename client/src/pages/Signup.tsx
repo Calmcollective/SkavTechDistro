@@ -13,6 +13,7 @@ import { Link } from "wouter";
 import { UserPlus, Check, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import skavtechSquareLogo from "../assets/skavtech-logo-square.png";
 
 const signupSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -41,8 +42,8 @@ type SignupForm = z.infer<typeof signupSchema>;
 
 const countryCodes = [
   { code: "+254", name: "Kenya", flag: "🇰🇪", supported: true },
-  { code: "+1", name: "United States", flag: "🇺🇸", supported: false },
-  { code: "+1", name: "Canada", flag: "🇨🇦", supported: false },
+  { code: "+1-US", name: "United States", flag: "🇺🇸", supported: false, displayCode: "+1" },
+  { code: "+1-CA", name: "Canada", flag: "🇨🇦", supported: false, displayCode: "+1" },
   { code: "+44", name: "United Kingdom", flag: "🇬🇧", supported: false },
   { code: "+33", name: "France", flag: "🇫🇷", supported: false },
   { code: "+49", name: "Germany", flag: "🇩🇪", supported: false },
@@ -161,8 +162,12 @@ export default function Signup() {
     <div className="min-h-screen bg-neutral-50 py-16">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-6">
-            <UserPlus className="h-8 w-8 text-white" />
+          <div className="mx-auto mb-6">
+            <img 
+              src={skavtechSquareLogo} 
+              alt="Skavtech Solutions Ltd" 
+              className="h-16 w-16 mx-auto rounded-lg object-contain"
+            />
           </div>
           <h1 className="text-3xl font-bold text-neutral-900 mb-2">Join Skavtech</h1>
           <p className="text-neutral-600">
@@ -279,10 +284,10 @@ export default function Signup() {
                               </FormControl>
                               <SelectContent className="max-h-60">
                                 {countryCodes.map((country) => (
-                                  <SelectItem key={`${country.code}-${country.name}`} value={country.code}>
+                                  <SelectItem key={country.code} value={country.code}>
                                     <div className="flex items-center gap-2">
                                       <span>{country.flag}</span>
-                                      <span className="text-xs">{country.code}</span>
+                                      <span className="text-xs">{country.displayCode || country.code}</span>
                                       <span className="text-xs text-neutral-600 hidden sm:inline">
                                         {country.name}
                                       </span>

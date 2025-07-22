@@ -1,12 +1,20 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { ShoppingCart, Calculator } from "lucide-react";
+import skavtechLogo from "../assets/skavtech-logo-square.png";
 
 export default function Hero() {
   return (
     <section className="gradient-bg text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="text-center">
+          <div className="mb-8">
+            <img 
+              src={skavtechLogo} 
+              alt="Skavtech Solutions Ltd" 
+              className="h-20 w-20 mx-auto mb-6 rounded-lg bg-white/10 p-2"
+            />
+          </div>
           <h1 className="text-4xl md:text-6xl font-bold mb-6 text-balance">
             Smart ICT Hardware Distribution & Services
           </h1>
