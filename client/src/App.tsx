@@ -11,6 +11,7 @@ import Services from "./pages/Services";
 import Admin from "./pages/Admin";
 import Fleet from "./pages/Fleet";
 import Signup from "./pages/Signup";
+import Login from "./pages/Login";
 import NotFound from "./pages/not-found";
 
 function Router() {
@@ -24,6 +25,7 @@ function Router() {
         <Route path="/admin" component={Admin} />
         <Route path="/fleet" component={Fleet} />
         <Route path="/signup" component={Signup} />
+        <Route path="/login" component={Login} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

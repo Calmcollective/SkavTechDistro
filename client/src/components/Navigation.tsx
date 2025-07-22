@@ -65,10 +65,12 @@ export default function Navigation() {
                 Sign Up
               </Button>
             </Link>
-            <Button size="sm" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Sign In
-            </Button>
+            <Link href="/login">
+              <Button size="sm" className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Sign In
+              </Button>
+            </Link>
           </div>
 
           {/* Mobile Menu */}
@@ -115,10 +117,12 @@ export default function Navigation() {
                       Sign Up
                     </Button>
                   </Link>
-                  <Button className="w-full flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    Sign In
-                  </Button>
+                  <Link href="/login" onClick={() => setIsOpen(false)}>
+                    <Button className="w-full flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      Sign In
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </SheetContent>

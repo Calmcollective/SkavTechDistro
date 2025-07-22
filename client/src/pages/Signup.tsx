@@ -9,32 +9,59 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { Link } from "wouter";
-import { UserPlus, Check, AlertCircle } from "lucide-react";
+import { UserPlus, Check, AlertCircle, Building2, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import skavtechSquareLogo from "../assets/skavtech-logo-square.png";
 
 const signupSchema = z.object({
+  // Personal Information
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
   username: z.string().min(3, "Username must be at least 3 characters"),
   email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  confirmPassword: z.string(),
+  
+  // Contact Information
   phoneNumber: z.string().min(1, "Phone number is required"),
   countryCode: z.string().min(1, "Please select your country"),
+  
+  // Address Information
+  city: z.string().min(1, "City is required"),
+  address: z.string().optional(),
+  
+  // Account Information
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string(),
   accountType: z.enum(["individual", "business"]),
+  
+  // Business Information (conditional)
   companyName: z.string().optional(),
+  industry: z.string().optional(),
+  companySize: z.string().optional(),
+  jobTitle: z.string().optional(),
+  
+  // Preferences
+  primaryInterest: z.string().min(1, "Please select your primary interest"),
+  communicationPreferences: z.array(z.string()).min(1, "Select at least one communication preference"),
+  newsletter: z.boolean().default(true),
+  
+  // Legal
   agreeToTerms: z.boolean().refine(val => val, "You must agree to the terms and conditions"),
+  agreeToMarketing: z.boolean().default(false),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
 }).refine((data) => {
   if (data.accountType === "business") {
-    return data.companyName && data.companyName.length > 0;
+    return data.companyName && data.companyName.length > 0 && 
+           data.industry && data.industry.length > 0 &&
+           data.jobTitle && data.jobTitle.length > 0;
   }
   return true;
 }, {
-  message: "Company name is required for business accounts",
+  message: "Business information is required for business accounts",
   path: ["companyName"],
 });
 
@@ -93,22 +120,57 @@ const countryCodes = [
   { code: "+966", name: "Saudi Arabia", flag: "🇸🇦", supported: false },
 ];
 
+// Additional data for form options
+const industries = [
+  "Technology", "Healthcare", "Education", "Finance", "Manufacturing", 
+  "Retail", "Government", "Non-profit", "Telecommunications", "Other"
+];
+
+const companySizes = [
+  "1-10 employees", "11-50 employees", "51-200 employees", 
+  "201-500 employees", "500+ employees"
+];
+
+const interests = [
+  "New Hardware", "Refurbished Devices", "Trade-in Services", 
+  "Warranty & Repairs", "Fleet Management", "Bulk Purchases"
+];
+
+const communicationOptions = [
+  { id: "email", label: "Email" },
+  { id: "sms", label: "SMS" },
+  { id: "whatsapp", label: "WhatsApp" },
+  { id: "phone", label: "Phone Calls" }
+];
+
 export default function Signup() {
   const [accountType, setAccountType] = useState<"individual" | "business">("individual");
+  const [currentStep, setCurrentStep] = useState(1);
   const { toast } = useToast();
 
   const form = useForm<SignupForm>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
+      firstName: "",
+      lastName: "",
       username: "",
       email: "",
-      password: "",
-      confirmPassword: "",
       phoneNumber: "",
       countryCode: "",
+      city: "",
+      address: "",
+      password: "",
+      confirmPassword: "",
       accountType: "individual",
       companyName: "",
+      industry: "",
+      companySize: "",
+      jobTitle: "",
+      primaryInterest: "",
+      communicationPreferences: [],
+      newsletter: true,
       agreeToTerms: false,
+      agreeToMarketing: false,
     },
   });
 
@@ -121,12 +183,24 @@ export default function Signup() {
       }
 
       const response = await apiRequest("POST", "/api/auth/register", {
+        firstName: data.firstName,
+        lastName: data.lastName,
         username: data.username,
         email: data.email,
         password: data.password,
         phoneNumber: `${data.countryCode}${data.phoneNumber}`,
+        countryCode: data.countryCode,
+        city: data.city,
+        address: data.address,
         accountType: data.accountType,
         companyName: data.companyName,
+        industry: data.industry,
+        companySize: data.companySize,
+        jobTitle: data.jobTitle,
+        primaryInterest: data.primaryInterest,
+        communicationPreferences: data.communicationPreferences,
+        newsletter: data.newsletter,
+        agreeToMarketing: data.agreeToMarketing,
       });
       return response.json();
     },
@@ -158,6 +232,478 @@ export default function Signup() {
     }
   };
 
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <>
+            {/* Account Type Selection */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div
+                onClick={() => handleAccountTypeChange("individual")}
+                className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                  accountType === "individual"
+                    ? "border-primary bg-primary/5"
+                    : "border-neutral-200 hover:border-neutral-300"
+                }`}
+              >
+                <div className="text-center">
+                  <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <User className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="font-semibold">Individual</div>
+                  <div className="text-xs text-neutral-600">Personal account</div>
+                </div>
+              </div>
+
+              <div
+                onClick={() => handleAccountTypeChange("business")}
+                className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                  accountType === "business"
+                    ? "border-primary bg-primary/5"
+                    : "border-neutral-200 hover:border-neutral-300"
+                }`}
+              >
+                <div className="text-center">
+                  <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <Building2 className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="font-semibold">Business</div>
+                  <div className="text-xs text-neutral-600">Corporate account</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Personal Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <FormField
+                control={form.control}
+                name="firstName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>First Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter first name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="lastName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Last Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter last name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Username</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter username" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email Address</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter email address" type="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </>
+        );
+
+      case 2:
+        return (
+          <>
+            {/* Contact & Location */}
+            <div className="space-y-2 mb-4">
+              <label className="text-sm font-medium">Phone Number</label>
+              <div className="grid grid-cols-5 gap-2">
+                <div className="col-span-2">
+                  <FormField
+                    control={form.control}
+                    name="countryCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Country" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="max-h-60">
+                            {countryCodes.map((country) => (
+                              <SelectItem key={country.code} value={country.code}>
+                                <div className="flex items-center gap-2">
+                                  <span>{country.flag}</span>
+                                  <span className="text-xs">{country.displayCode || country.code}</span>
+                                  <span className="text-xs text-neutral-600 hidden sm:inline">
+                                    {country.name}
+                                  </span>
+                                  {country.supported && (
+                                    <Check className="h-3 w-3 text-green-600" />
+                                  )}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="col-span-3">
+                  <FormField
+                    control={form.control}
+                    name="phoneNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Input placeholder="700123456" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+              <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg">
+                <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="text-xs text-blue-800">
+                  <strong>Note:</strong> Currently, we only support Kenyan phone numbers (+254). 
+                  International support will be available soon!
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="city"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>City</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter city" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Address (Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter address" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </>
+        );
+
+      case 3:
+        return (
+          <>
+            {/* Business Information (if business account) */}
+            {accountType === "business" && (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <FormField
+                    control={form.control}
+                    name="companyName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Company Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter company name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="jobTitle"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Job Title</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter job title" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <FormField
+                    control={form.control}
+                    name="industry"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Industry</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select industry" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {industries.map((industry) => (
+                              <SelectItem key={industry} value={industry}>
+                                {industry}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="companySize"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Company Size</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select company size" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {companySizes.map((size) => (
+                              <SelectItem key={size} value={size}>
+                                {size}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Password */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter password" type="password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirm Password</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Confirm password" type="password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </>
+        );
+
+      case 4:
+        return (
+          <>
+            {/* Preferences */}
+            <FormField
+              control={form.control}
+              name="primaryInterest"
+              render={({ field }) => (
+                <FormItem className="mb-4">
+                  <FormLabel>Primary Interest</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="What are you most interested in?" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {interests.map((interest) => (
+                        <SelectItem key={interest} value={interest}>
+                          {interest}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Communication Preferences */}
+            <FormField
+              control={form.control}
+              name="communicationPreferences"
+              render={() => (
+                <FormItem className="mb-6">
+                  <FormLabel>How would you like us to contact you?</FormLabel>
+                  <div className="grid grid-cols-2 gap-4">
+                    {communicationOptions.map((option) => (
+                      <FormField
+                        key={option.id}
+                        control={form.control}
+                        name="communicationPreferences"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(option.id)}
+                                onCheckedChange={(checked) => {
+                                  return checked
+                                    ? field.onChange([...field.value, option.id])
+                                    : field.onChange(
+                                        field.value?.filter((value) => value !== option.id)
+                                      )
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="text-sm font-normal">
+                              {option.label}
+                            </FormLabel>
+                          </FormItem>
+                        )}
+                      />
+                    ))}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Legal */}
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="agreeToTerms"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel className="text-sm">
+                        I agree to the{" "}
+                        <Link href="/terms" className="text-primary hover:underline">
+                          Terms of Service
+                        </Link>{" "}
+                        and{" "}
+                        <Link href="/privacy" className="text-primary hover:underline">
+                          Privacy Policy
+                        </Link>
+                      </FormLabel>
+                      <FormMessage />
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="newsletter"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel className="text-sm">
+                        Subscribe to our newsletter for updates and offers
+                      </FormLabel>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="agreeToMarketing"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel className="text-sm">
+                        I agree to receive marketing communications
+                      </FormLabel>
+                    </div>
+                  </FormItem>
+                )}
+              />
+            </div>
+          </>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-neutral-50 py-16">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -175,235 +721,91 @@ export default function Signup() {
           </p>
         </div>
 
+        {/* Progress Steps */}
+        <div className="mb-8">
+          <div className="flex justify-between items-center">
+            {[1, 2, 3, 4].map((step) => (
+              <div key={step} className="flex items-center">
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                    step <= currentStep
+                      ? "bg-primary text-white"
+                      : "bg-neutral-200 text-neutral-600"
+                  }`}
+                >
+                  {step}
+                </div>
+                {step < 4 && (
+                  <div
+                    className={`w-12 h-0.5 mx-2 ${
+                      step < currentStep ? "bg-primary" : "bg-neutral-200"
+                    }`}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-between mt-2 text-xs text-neutral-600">
+            <span>Personal Info</span>
+            <span>Contact</span>
+            <span>Account</span>
+            <span>Preferences</span>
+          </div>
+        </div>
+
         <Card>
           <CardHeader>
-            <CardTitle>Account Information</CardTitle>
+            <CardTitle>
+              {currentStep === 1 && "Personal Information"}
+              {currentStep === 2 && "Contact Details"}
+              {currentStep === 3 && "Account Setup"}
+              {currentStep === 4 && "Preferences & Legal"}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                {/* Account Type Selection */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div
-                    onClick={() => handleAccountTypeChange("individual")}
-                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                      accountType === "individual"
-                        ? "border-primary bg-primary/5"
-                        : "border-neutral-200 hover:border-neutral-300"
-                    }`}
+                {renderStepContent()}
+
+                {/* Navigation Buttons */}
+                <div className="flex justify-between">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
+                    disabled={currentStep === 1}
                   >
-                    <div className="text-center">
-                      <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
-                        <UserPlus className="h-4 w-4 text-primary" />
-                      </div>
-                      <div className="font-semibold">Individual</div>
-                      <div className="text-xs text-neutral-600">Personal account</div>
-                    </div>
-                  </div>
+                    Previous
+                  </Button>
 
-                  <div
-                    onClick={() => handleAccountTypeChange("business")}
-                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                      accountType === "business"
-                        ? "border-primary bg-primary/5"
-                        : "border-neutral-200 hover:border-neutral-300"
-                    }`}
-                  >
-                    <div className="text-center">
-                      <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
-                        <UserPlus className="h-4 w-4 text-primary" />
-                      </div>
-                      <div className="font-semibold">Business</div>
-                      <div className="text-xs text-neutral-600">Corporate account</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="username"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Username</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter username" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email Address</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter email address" type="email" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {/* Company Name for Business Accounts */}
-                {accountType === "business" && (
-                  <FormField
-                    control={form.control}
-                    name="companyName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Company Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter company name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-
-                {/* Phone Number with Country Code */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Phone Number</label>
-                  <div className="grid grid-cols-5 gap-2">
-                    <div className="col-span-2">
-                      <FormField
-                        control={form.control}
-                        name="countryCode"
-                        render={({ field }) => (
-                          <FormItem>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Country" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent className="max-h-60">
-                                {countryCodes.map((country) => (
-                                  <SelectItem key={country.code} value={country.code}>
-                                    <div className="flex items-center gap-2">
-                                      <span>{country.flag}</span>
-                                      <span className="text-xs">{country.displayCode || country.code}</span>
-                                      <span className="text-xs text-neutral-600 hidden sm:inline">
-                                        {country.name}
-                                      </span>
-                                      {country.supported && (
-                                        <Check className="h-3 w-3 text-green-600" />
-                                      )}
-                                    </div>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    <div className="col-span-3">
-                      <FormField
-                        control={form.control}
-                        name="phoneNumber"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input placeholder="700123456" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg">
-                    <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                    <div className="text-xs text-blue-800">
-                      <strong>Note:</strong> Currently, we only support Kenyan phone numbers (+254). 
-                      International support will be available soon!
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter password" type="password" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="confirmPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Confirm Password</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Confirm password" type="password" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="agreeToTerms"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <label className="text-sm">
-                          I agree to the{" "}
-                          <Link href="/terms" className="text-primary hover:underline">
-                            Terms of Service
-                          </Link>{" "}
-                          and{" "}
-                          <Link href="/privacy" className="text-primary hover:underline">
-                            Privacy Policy
-                          </Link>
-                        </label>
-                        <FormMessage />
-                      </div>
-                    </FormItem>
+                  {currentStep < 4 ? (
+                    <Button
+                      type="button"
+                      onClick={() => setCurrentStep(Math.min(4, currentStep + 1))}
+                    >
+                      Next
+                    </Button>
+                  ) : (
+                    <Button
+                      type="submit"
+                      className="bg-primary hover:bg-primary/90"
+                      disabled={signupMutation.isPending}
+                    >
+                      {signupMutation.isPending ? "Creating Account..." : "Create Account"}
+                    </Button>
                   )}
-                />
-
-                <Button
-                  type="submit"
-                  className="w-full bg-primary hover:bg-primary/90"
-                  disabled={signupMutation.isPending}
-                >
-                  {signupMutation.isPending ? "Creating Account..." : "Create Account"}
-                </Button>
-
-                <div className="text-center text-sm text-neutral-600">
-                  Already have an account?{" "}
-                  <Link href="/login" className="text-primary hover:underline font-semibold">
-                    Sign in here
-                  </Link>
                 </div>
               </form>
             </Form>
           </CardContent>
         </Card>
+
+        <div className="text-center text-sm text-neutral-600 mt-6">
+          Already have an account?{" "}
+          <Link href="/login" className="text-primary hover:underline font-semibold">
+            Sign in here
+          </Link>
+        </div>
       </div>
     </div>
   );

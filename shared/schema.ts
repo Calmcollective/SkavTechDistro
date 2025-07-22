@@ -8,9 +8,21 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   role: text("role").notNull().default("customer"), // customer, admin, technician
   email: text("email"),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
   phoneNumber: text("phone_number"),
+  countryCode: text("country_code"),
+  city: text("city"),
+  address: text("address"),
   accountType: text("account_type").default("individual"), // individual, business
   companyName: text("company_name"),
+  industry: text("industry"),
+  companySize: text("company_size"),
+  jobTitle: text("job_title"),
+  primaryInterest: text("primary_interest"),
+  communicationPreferences: json("communication_preferences"), // Array of strings
+  newsletter: boolean("newsletter").default(true),
+  agreeToMarketing: boolean("agree_to_marketing").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
