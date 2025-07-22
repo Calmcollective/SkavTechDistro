@@ -1,0 +1,88 @@
+🚧 Build a full-stack smart ICT hardware distribution and service platform for Skavtech that merges core e-commerce and tech service features into a unified, mobile-first app.
+
+✅ The app must include the following 6 major feature modules:
+
+1. Refurbishment Dashboard (Admin Panel) – Track devices through stages: Received ➝ Diagnosed ➝ Repaired ➝ QC ➝ Ready for Sale. Include filters by model, status, technician, and visual KPIs using charts.
+
+
+2. Customer Trade-In Tool – Allow customers to input device specs and condition, get instant estimated value, and schedule pickup/drop-off with calendar integration and WhatsApp/email confirmation.
+
+
+3. Product Comparison Wizard – Let users select up to 3 devices (new/refurb), compare specs, warranty, price, and condition. Include smart recommendation logic (e.g., “Best Value” badge).
+
+
+4. Warranty & Repair Tracker – Users enter serial/invoice number to view warranty status, submit repairs, and track repair stages. Admin can log/close repair jobs with comments.
+
+
+5. AI Support Chatbot ("SkavBot") – Smart chatbot with GPT or Dialogflow backend to answer FAQs, guide purchases, help with repairs, and trigger form submissions or support tickets.
+
+
+6. Corporate Fleet Portal – Enterprise clients can view their devices, manage warranties, export audit logs, request support or replacements.
+
+
+
+✅ Replicate and integrate the following elements from skavtech.co.ke:
+
+Product listing with categories (e.g., Servers, PCs, Laptops, Accessories)
+
+Request Quote button functionality
+
+Hero sections, navigation layout, brand color scheme, and footer links (About Us, Contact, Services)
+
+Embedded WhatsApp support integration
+
+
+✅ Technical requirements:
+
+Full source code must be provided:
+
+frontend (React.js/Next.js or Vue.js in .js, .css, .html)
+
+backend (Python Flask/FastAPI or Django in .py)
+
+Optional: MongoDB/PostgreSQL schema, SQLite for lightweight mode
+
+
+Handle all error types gracefully:
+
+Syntax errors, API failures, missing fields, broken routes, server unavailability
+
+Return user-friendly error messages like "Oops! Something went wrong. Try again or contact support."
+
+
+Must include:
+
+Clean UI with responsive design (Tailwind CSS or Bootstrap)
+
+Component-based frontend architecture
+
+API documentation (Swagger/OpenAPI preferred)
+
+Environment config (.env), install instructions, and database migration scripts
+
+Code organized in modular folders with readme files
+
+
+
+✅ Bonus Features (optional but ideal):
+
+Admin device upload with CSV import
+
+Push/email notifications for repair status and trade-in valuation
+
+Eco-impact calculator for refurbished product purchases
+
+Dynamic CMS for announcements, blog posts, or news
+
+
+✅ Output Format:
+
+Provide all files in structured zip or GitHub-style folder tree
+
+Use .py, .js, .html, .css, .json, .env, and .md as needed
+
+Ensure code quality: Linting (e.g., flake8, ESLint), well-commented functions, no dead code
+
+
+🧠 Final Output:
+A fully functional, ready-to-deploy app covering Skavtech’s website features plus added smart tools for B2B clients, customers, and admin operations — scalable, mobile-first, and powered by full-stack technology.
