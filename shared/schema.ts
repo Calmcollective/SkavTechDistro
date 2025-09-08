@@ -1,4 +1,5 @@
 import { pgTable, text, serial, integer, boolean, timestamp, real, json } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -55,8 +56,8 @@ export const devices = pgTable("devices", {
   repairNotes: text("repair_notes"),
   estimatedValue: real("estimated_value"),
   completionDate: timestamp("completion_date"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: timestamp("created_at").default(sql`(datetime('now'))`),
+  updatedAt: timestamp("updated_at").default(sql`(datetime('now'))`),
 });
 
 export const warranties = pgTable("warranties", {
@@ -69,7 +70,7 @@ export const warranties = pgTable("warranties", {
   invoiceNumber: text("invoice_number"),
   customerEmail: text("customer_email"),
   isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").default(sql`(datetime('now'))`),
 });
 
 export const repairTickets = pgTable("repair_tickets", {
@@ -84,8 +85,8 @@ export const repairTickets = pgTable("repair_tickets", {
   repairNotes: text("repair_notes"),
   customerInfo: json("customer_info"),
   statusHistory: json("status_history"), // Array of status updates
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: timestamp("created_at").default(sql`(CURRENT_TIMESTAMP)`),
+  updatedAt: timestamp("updated_at").default(sql`(datetime('now'))`),
 });
 
 export const tradeIns = pgTable("trade_ins", {
@@ -99,7 +100,7 @@ export const tradeIns = pgTable("trade_ins", {
   customerInfo: json("customer_info"),
   pickupScheduled: boolean("pickup_scheduled").default(false),
   status: text("status").notNull().default("quoted"), // quoted, scheduled, collected, processed
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").default(sql`(datetime('now'))`),
 });
 
 export const fleetDevices = pgTable("fleet_devices", {
@@ -111,7 +112,7 @@ export const fleetDevices = pgTable("fleet_devices", {
   status: text("status").notNull().default("active"), // active, maintenance, retired
   warrantyExpiry: timestamp("warranty_expiry"),
   lastMaintenance: timestamp("last_maintenance"),
-  deploymentDate: timestamp("deployment_date").defaultNow(),
+  deploymentDate: timestamp("deployment_date").default(sql`(datetime('now'))`),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

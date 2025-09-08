@@ -188,7 +188,7 @@ export default function Signup() {
         username: data.username,
         email: data.email,
         password: data.password,
-        phoneNumber: `${data.countryCode}${data.phoneNumber}`,
+        phoneNumber: data.phoneNumber,
         countryCode: data.countryCode,
         city: data.city,
         address: data.address,

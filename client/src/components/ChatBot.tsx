@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { MessageCircle, X, Send, Bot } from "lucide-react";
+import { MessageCircle, X, Send, Bot, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 interface Message {
   id: number;
@@ -17,66 +19,69 @@ export default function ChatBot() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
-      text: "Hi! I'm SkavBot, your AI assistant. How can I help you today?",
+      text: "Hi! I'm SkavBot, your AI assistant for Skavtech ICT solutions.\n\nI can help you with:\n• Product information and pricing\n• Warranty status checks\n• Repair tracking and support\n• Trade-in valuations\n• Fleet management inquiries\n\nHow can I assist you today?",
       isBot: true,
       timestamp: new Date(),
     },
   ]);
   const [inputValue, setInputValue] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() || isLoading) return;
+
+    const userInput = inputValue.trim();
 
     // Add user message
     const userMessage: Message = {
       id: Date.now(),
-      text: inputValue.trim(),
+      text: userInput,
       isBot: false,
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
+    setIsLoading(true);
 
-    // Simulate bot response
-    setTimeout(() => {
-      const botResponse = getBotResponse(inputValue.trim());
+    try {
+      // Call backend API
+      const response = await apiRequest("POST", "/api/chatbot", { message: userInput });
+      const data = await response.json();
+      const botResponse = data.response;
+
       const botMessage: Message = {
         id: Date.now() + 1,
         text: botResponse,
         isBot: true,
         timestamp: new Date(),
       };
+
       setMessages((prev) => [...prev, botMessage]);
-    }, 1000);
+    } catch (error) {
+      console.error("Chatbot error:", error);
+      toast({
+        title: "Chatbot Error",
+        description: "Sorry, I'm having trouble responding right now. Please try again.",
+        variant: "destructive",
+      });
+
+      // Add error message
+      const errorMessage: Message = {
+        id: Date.now() + 1,
+        text: "I apologize, but I'm experiencing technical difficulties. Please try again in a moment, or contact our support team directly.",
+        isBot: true,
+        timestamp: new Date(),
+      };
+
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const getBotResponse = (userInput: string): string => {
-    const input = userInput.toLowerCase();
-    
-    if (input.includes("warranty") || input.includes("guarantee")) {
-      return "You can check your warranty status using your device serial number in the Services section. Our warranty covers hardware defects for up to 2 years depending on the product.";
-    }
-    
-    if (input.includes("trade") || input.includes("sell")) {
-      return "Our trade-in program offers competitive prices for your used devices! Visit the Trade-In section to get an instant quote. We support pickup anywhere in Kenya.";
-    }
-    
-    if (input.includes("repair") || input.includes("fix")) {
-      return "We offer comprehensive repair services for all ICT devices. You can submit a repair request in the Services section and track its progress in real-time.";
-    }
-    
-    if (input.includes("price") || input.includes("cost")) {
-      return "Our prices are competitive with market rates. Check out our Products section for current pricing on new and refurbished devices. We also offer bulk discounts for corporate clients.";
-    }
-    
-    if (input.includes("fleet") || input.includes("business")) {
-      return "Our Fleet Management portal is perfect for businesses! It offers device tracking, warranty management, and bulk operations. Contact us to set up your corporate account.";
-    }
-    
-    return "I understand you're looking for help! You can browse our products, submit trade-in requests, check warranties, or manage your fleet. Is there something specific I can help you find?";
-  };
 
   if (!isOpen) {
     return (
@@ -124,7 +129,7 @@ export default function ChatBot() {
                         : "bg-primary text-white"
                     }`}
                   >
-                    <p className="text-sm">{message.text}</p>
+                    <div className="text-sm whitespace-pre-line">{message.text}</div>
                     <p className="text-xs opacity-70 mt-1">
                       {message.timestamp.toLocaleTimeString([], {
                         hour: "2-digit",
@@ -145,8 +150,12 @@ export default function ChatBot() {
                 placeholder="Type your message..."
                 className="flex-1"
               />
-              <Button type="submit" size="sm" className="px-3">
-                <Send className="h-4 w-4" />
+              <Button type="submit" size="sm" className="px-3" disabled={isLoading}>
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
               </Button>
             </form>
           </div>

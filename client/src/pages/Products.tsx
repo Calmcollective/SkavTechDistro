@@ -72,11 +72,12 @@ export default function Products() {
   };
 
   const handleCompareProducts = () => {
-    // TODO: Implement comparison modal or navigation to comparison page
-    toast({
-      title: "Product Comparison",
-      description: "Comparison feature will be implemented in the next phase.",
-    });
+    if (comparedProducts.length >= 2) {
+      // The ComparisonWidget now handles the modal internally
+      // This function is called when the "Compare Selected Products" button is clicked
+      // The actual comparison logic is handled in the ComparisonWidget component
+      console.log("Comparing products:", comparedProducts.map(p => p.name));
+    }
   };
 
   if (error) {

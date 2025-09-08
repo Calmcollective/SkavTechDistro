@@ -15,11 +15,17 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
 const tradeInSchema = z.object({
-  deviceType: z.string().min(1, "Device type is required"),
-  brand: z.string().min(1, "Brand is required"),
-  model: z.string().min(1, "Model is required"),
-  age: z.string().min(1, "Age is required"),
-  condition: z.string().min(1, "Condition is required"),
+  deviceType: z.enum(["laptop", "desktop", "server", "tablet"]).refine((val) => {
+    return ["laptop", "desktop", "server", "tablet"].includes(val);
+  }, { message: "Please select a valid device type" }),
+  brand: z.string().min(1, "Brand is required").max(50, "Brand name too long"),
+  model: z.string().min(1, "Model is required").max(100, "Model name too long"),
+  age: z.enum(["0-1", "1-2", "2-3", "3-5", "5+"]).refine((val) => {
+    return ["0-1", "1-2", "2-3", "3-5", "5+"].includes(val);
+  }, { message: "Please select a valid age range" }),
+  condition: z.enum(["excellent", "good", "fair", "poor"]).refine((val) => {
+    return ["excellent", "good", "fair", "poor"].includes(val);
+  }, { message: "Please select a valid condition" })
 });
 
 type TradeInForm = z.infer<typeof tradeInSchema>;
@@ -31,11 +37,11 @@ export default function TradeInForm() {
   const form = useForm<TradeInForm>({
     resolver: zodResolver(tradeInSchema),
     defaultValues: {
-      deviceType: "",
+      deviceType: undefined,
       brand: "",
       model: "",
-      age: "",
-      condition: "",
+      age: undefined,
+      condition: undefined,
     },
   });
 
@@ -57,7 +63,7 @@ export default function TradeInForm() {
   });
 
   const submitMutation = useMutation({
-    mutationFn: async (data: TradeInForm & { estimatedValue: number }) => {
+    mutationFn: async (data: TradeInForm & { estimatedValue: number; customerInfo?: any }) => {
       const response = await apiRequest("POST", "/api/trade-in", data);
       return response.json();
     },
@@ -82,8 +88,13 @@ export default function TradeInForm() {
 
   const handleSchedulePickup = () => {
     if (estimatedValue && form.getValues()) {
+      const formData = form.getValues();
       submitMutation.mutate({
-        ...form.getValues(),
+        deviceType: formData.deviceType,
+        brand: formData.brand,
+        model: formData.model,
+        age: formData.age,
+        condition: formData.condition,
         estimatedValue,
         customerInfo: { status: "pickup_requested" }
       });
