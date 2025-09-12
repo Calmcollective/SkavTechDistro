@@ -66,12 +66,22 @@ export class DrizzleStorage implements IStorage {
     // Database connection is already established above
   }
 
+  // Helper method to convert timestamp to Date
+  private timestampToDate(timestamp: number | null): Date | null {
+    return timestamp ? new Date(timestamp * 1000) : null;
+  }
+
+  // Helper method to convert Date to timestamp
+  private dateToTimestamp(date: Date | null): number | null {
+    return date ? Math.floor(date.getTime() / 1000) : null;
+  }
+
   // User methods
   async getUsers(): Promise<User[]> {
     const result = await db.select().from(users);
     return result.map(user => ({
       ...user,
-      createdAt: user.createdAt ? new Date(user.createdAt) : null,
+      createdAt: this.timestampToDate(user.createdAt),
     }));
   }
 
@@ -81,7 +91,7 @@ export class DrizzleStorage implements IStorage {
     const user = result[0];
     return {
       ...user,
-      createdAt: user.createdAt ? new Date(user.createdAt) : null,
+      createdAt: this.timestampToDate(user.createdAt),
     };
   }
 
@@ -91,7 +101,7 @@ export class DrizzleStorage implements IStorage {
     const user = result[0];
     return {
       ...user,
-      createdAt: user.createdAt ? new Date(user.createdAt) : null,
+      createdAt: this.timestampToDate(user.createdAt),
     };
   }
 
@@ -122,7 +132,7 @@ export class DrizzleStorage implements IStorage {
     const user = result[0];
     return {
       ...user,
-      createdAt: user.createdAt ? new Date(user.createdAt) : null,
+      createdAt: this.timestampToDate(user.createdAt),
     };
   }
 
@@ -188,17 +198,23 @@ export class DrizzleStorage implements IStorage {
 
   // Device methods
   async getDevices(filters?: { status?: string; technician?: string }): Promise<Device[]> {
-    let devices = Array.from(this.devices.values());
-    
+    let query = db.select().from(devices);
+
     if (filters?.status) {
-      devices = devices.filter(d => d.status === filters.status);
+      query = db.select().from(devices).where(eq(devices.status, filters.status));
     }
-    
+
     if (filters?.technician) {
-      devices = devices.filter(d => d.assignedTechnician === filters.technician);
+      query = db.select().from(devices).where(eq(devices.assignedTechnician, filters.technician));
     }
-    
-    return devices.sort((a, b) => {
+
+    const result = await query;
+    return result.map(device => ({
+      ...device,
+      createdAt: this.timestampToDate(device.createdAt),
+      updatedAt: this.timestampToDate(device.updatedAt),
+      completionDate: this.timestampToDate(device.completionDate),
+    })).sort((a, b) => {
       const aTime = a.updatedAt?.getTime() || 0;
       const bTime = b.updatedAt?.getTime() || 0;
       return bTime - aTime;
@@ -206,38 +222,71 @@ export class DrizzleStorage implements IStorage {
   }
 
   async getDevice(id: number): Promise<Device | undefined> {
-    return this.devices.get(id);
+    const result = await db.select().from(devices).where(eq(devices.id, id)).limit(1);
+    if (result.length === 0) return undefined;
+    const device = result[0];
+    return {
+      ...device,
+      createdAt: this.timestampToDate(device.createdAt),
+      updatedAt: this.timestampToDate(device.updatedAt),
+      completionDate: this.timestampToDate(device.completionDate),
+    };
   }
 
   async getDeviceBySerial(serialNumber: string): Promise<Device | undefined> {
-    return Array.from(this.devices.values()).find(d => d.serialNumber === serialNumber);
+    const result = await db.select().from(devices).where(eq(devices.serialNumber, serialNumber)).limit(1);
+    if (result.length === 0) return undefined;
+    const device = result[0];
+    return {
+      ...device,
+      createdAt: this.timestampToDate(device.createdAt),
+      updatedAt: this.timestampToDate(device.updatedAt),
+      completionDate: this.timestampToDate(device.completionDate),
+    };
   }
 
   async createDevice(insertDevice: InsertDevice): Promise<Device> {
-    const id = this.currentDeviceId++;
-    const device: Device = {
+    const result = await db.insert(devices).values({
       ...insertDevice,
-      id,
       status: insertDevice.status ?? "received",
       assignedTechnician: insertDevice.assignedTechnician ?? null,
       customerInfo: insertDevice.customerInfo ?? {},
       repairNotes: insertDevice.repairNotes ?? null,
       estimatedValue: insertDevice.estimatedValue ?? null,
-      completionDate: insertDevice.completionDate ?? null,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      completionDate: this.dateToTimestamp(insertDevice.completionDate),
+      createdAt: this.dateToTimestamp(new Date()),
+      updatedAt: this.dateToTimestamp(new Date()),
+    }).returning();
+
+    const device = result[0];
+    return {
+      ...device,
+      createdAt: this.timestampToDate(device.createdAt),
+      updatedAt: this.timestampToDate(device.updatedAt),
+      completionDate: this.timestampToDate(device.completionDate),
     };
-    this.devices.set(id, device);
-    return device;
   }
 
   async updateDevice(id: number, updates: Partial<Device>): Promise<Device | undefined> {
-    const device = this.devices.get(id);
-    if (!device) return undefined;
-    
-    const updatedDevice = { ...device, ...updates, updatedAt: new Date() };
-    this.devices.set(id, updatedDevice);
-    return updatedDevice;
+    const updateData: any = { ...updates };
+    if (updates.completionDate !== undefined) {
+      updateData.completionDate = this.dateToTimestamp(updates.completionDate);
+    }
+    updateData.updatedAt = this.dateToTimestamp(new Date());
+
+    const result = await db.update(devices)
+      .set(updateData)
+      .where(eq(devices.id, id))
+      .returning();
+
+    if (result.length === 0) return undefined;
+    const device = result[0];
+    return {
+      ...device,
+      createdAt: this.timestampToDate(device.createdAt),
+      updatedAt: this.timestampToDate(device.updatedAt),
+      completionDate: this.timestampToDate(device.completionDate),
+    };
   }
 
   // Warranty methods

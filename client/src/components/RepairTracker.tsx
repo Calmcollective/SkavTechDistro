@@ -12,7 +12,13 @@ import { Badge } from "@/components/ui/badge";
 import { Wrench, Search, Plus, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { RepairTicket } from "@shared/schema";
+import type { RepairTicket } from "../../../shared/schema";
+
+interface StatusHistoryItem {
+  status: string;
+  timestamp: string;
+  notes?: string;
+}
 
 const repairSearchSchema = z.object({
   ticketId: z.string().min(1, "Repair ticket ID is required"),
@@ -177,14 +183,14 @@ export default function RepairTracker() {
                       new Date(ticket.estimatedCompletion).toLocaleDateString() : "TBD"}
                   </div>
                   <div className="text-xs text-neutral-500">
-                    Last updated: {new Date(ticket.updatedAt).toLocaleString()}
+                    Last updated: {ticket.updatedAt ? new Date(ticket.updatedAt).toLocaleString() : 'N/A'}
                   </div>
                 </div>
 
                 {/* Status History */}
-                {ticket.statusHistory && Array.isArray(ticket.statusHistory) && (
+                {ticket.statusHistory ? (
                   <div className="space-y-4">
-                    {ticket.statusHistory.map((status: any, index: number) => (
+                    {(Array.isArray(ticket.statusHistory) ? ticket.statusHistory : JSON.parse(ticket.statusHistory as string)).map((status: StatusHistoryItem, index: number) => (
                       <div key={index} className="flex items-center">
                         <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center mr-3 text-sm">
                           {getStatusIcon(status.status)}
@@ -203,7 +209,7 @@ export default function RepairTracker() {
                       </div>
                     ))}
                   </div>
-                )}
+                ) : null}
               </div>
             )}
           </div>

@@ -6,13 +6,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Inbox, Wrench, Search, CheckCircle, Plus, Download } from "lucide-react";
-import type { Device } from "@shared/schema";
+import type { Device } from "../../../shared/schema";
+
+interface DashboardStats {
+  received: number;
+  in_repair: number;
+  qc: number;
+  ready: number;
+}
 
 export default function AdminDashboard() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [technicianFilter, setTechnicianFilter] = useState<string>("");
 
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/admin/stats"],
   });
 
@@ -207,7 +214,7 @@ export default function AdminDashboard() {
                     <TableCell>{getStatusBadge(device.status)}</TableCell>
                     <TableCell>{device.assignedTechnician || "Unassigned"}</TableCell>
                     <TableCell>
-                      {new Date(device.updatedAt).toLocaleDateString()}
+                      {device.updatedAt ? new Date(device.updatedAt).toLocaleDateString() : 'N/A'}
                     </TableCell>
                     <TableCell>
                       <div className="flex space-x-2">

@@ -10,15 +10,6 @@
 
 /// <reference types="cypress" />
 
-declare global {
-  namespace Cypress {
-    interface Chainable<Subject = any> {
-      login(username: string, password: string): Chainable<void>
-      register(userData: any): Chainable<void>
-    }
-  }
-}
-
 // Custom command to login
 Cypress.Commands.add('login', (username: string, password: string) => {
   cy.request('POST', '/api/auth/login', { username, password })
@@ -32,7 +23,7 @@ Cypress.Commands.add('login', (username: string, password: string) => {
 
 // Custom command to register a user
 Cypress.Commands.add('register', (userData: any) => {
-  cy.request('POST', '/api/auth/register', userData)
+  cy.request('POST', '/api/auth/signup', userData)
     .then((response) => {
       expect(response.status).to.eq(201)
     })

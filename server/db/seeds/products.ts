@@ -1,4 +1,4 @@
-import { storage } from "../../storage";
+import { storage } from "../../src/storage";
 import type { InsertProduct } from "@shared/schema";
 
 export const seedProducts = async () => {

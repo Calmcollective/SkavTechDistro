@@ -1,4 +1,4 @@
-import { db } from "../../storage";
+import { db } from "../../src/storage";
 import { users } from "@shared/schema";
 import bcrypt from "bcrypt";
 

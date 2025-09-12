@@ -1,6 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { storage } from "../storage";
 import {
   insertProductSchema,
   insertDeviceSchema,
@@ -892,7 +892,7 @@ What specific information are you looking for? I can provide detailed answers ab
   });
 
   // Authentication endpoints
-  app.post("/api/auth/register", async (req, res) => {
+  app.post("/api/auth/signup", async (req, res) => {
     try {
       // Basic validation for Kenyan phone numbers
       const { phoneNumber, countryCode, password, ...userData } = req.body;

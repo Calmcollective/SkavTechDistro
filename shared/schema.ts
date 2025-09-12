@@ -1,10 +1,10 @@
-import { pgTable, text, serial, integer, boolean, timestamp, real, json } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
+export const users = sqliteTable("users", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   role: text("role").notNull().default("customer"), // customer, admin, technician
@@ -21,14 +21,14 @@ export const users = pgTable("users", {
   companySize: text("company_size"),
   jobTitle: text("job_title"),
   primaryInterest: text("primary_interest"),
-  communicationPreferences: json("communication_preferences"), // Array of strings
-  newsletter: boolean("newsletter").default(true),
-  agreeToMarketing: boolean("agree_to_marketing").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
+  communicationPreferences: text("communication_preferences", { mode: 'json' }), // Array of strings
+  newsletter: integer("newsletter", { mode: 'boolean' }).default(true),
+  agreeToMarketing: integer("agree_to_marketing", { mode: 'boolean' }).default(false),
+  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(unixepoch())`),
 });
 
-export const products = pgTable("products", {
-  id: serial("id").primaryKey(),
+export const products = sqliteTable("products", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   brand: text("brand").notNull(),
   category: text("category").notNull(), // servers, laptops, desktops, accessories
@@ -36,84 +36,84 @@ export const products = pgTable("products", {
   price: real("price").notNull(),
   originalPrice: real("original_price"),
   description: text("description"),
-  specifications: json("specifications"), // JSON object with specs
+  specifications: text("specifications", { mode: 'json' }), // JSON object with specs
   warrantyYears: integer("warranty_years").default(1),
   stockQuantity: integer("stock_quantity").default(0),
   imageUrl: text("image_url"),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
+  isActive: integer("is_active", { mode: 'boolean' }).default(true),
+  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(unixepoch())`),
 });
 
-export const devices = pgTable("devices", {
-  id: serial("id").primaryKey(),
+export const devices = sqliteTable("devices", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   serialNumber: text("serial_number").notNull().unique(),
   model: text("model").notNull(),
   brand: text("brand").notNull(),
   deviceType: text("device_type").notNull(),
   status: text("status").notNull().default("received"), // received, diagnosed, repaired, qc, ready
   assignedTechnician: text("assigned_technician"),
-  customerInfo: json("customer_info"),
+  customerInfo: text("customer_info", { mode: 'json' }),
   repairNotes: text("repair_notes"),
   estimatedValue: real("estimated_value"),
-  completionDate: timestamp("completion_date"),
-  createdAt: timestamp("created_at").default(sql`(datetime('now'))`),
-  updatedAt: timestamp("updated_at").default(sql`(datetime('now'))`),
+  completionDate: integer("completion_date", { mode: 'timestamp' }),
+  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: 'timestamp' }).default(sql`(unixepoch())`),
 });
 
-export const warranties = pgTable("warranties", {
-  id: serial("id").primaryKey(),
+export const warranties = sqliteTable("warranties", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   serialNumber: text("serial_number").notNull(),
   productId: integer("product_id").references(() => products.id),
-  purchaseDate: timestamp("purchase_date").notNull(),
-  expiryDate: timestamp("expiry_date").notNull(),
+  purchaseDate: integer("purchase_date", { mode: 'timestamp' }).notNull(),
+  expiryDate: integer("expiry_date", { mode: 'timestamp' }).notNull(),
   coverage: text("coverage").notNull(),
   invoiceNumber: text("invoice_number"),
   customerEmail: text("customer_email"),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").default(sql`(datetime('now'))`),
+  isActive: integer("is_active", { mode: 'boolean' }).default(true),
+  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(unixepoch())`),
 });
 
-export const repairTickets = pgTable("repair_tickets", {
-  id: serial("id").primaryKey(),
+export const repairTickets = sqliteTable("repair_tickets", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   ticketId: text("ticket_id").notNull().unique(),
   serialNumber: text("serial_number").notNull(),
   deviceModel: text("device_model").notNull(),
   issueDescription: text("issue_description").notNull(),
   status: text("status").notNull().default("received"), // received, diagnosed, in_progress, qc, completed
   assignedTechnician: text("assigned_technician"),
-  estimatedCompletion: timestamp("estimated_completion"),
+  estimatedCompletion: integer("estimated_completion", { mode: 'timestamp' }),
   repairNotes: text("repair_notes"),
-  customerInfo: json("customer_info"),
-  statusHistory: json("status_history"), // Array of status updates
-  createdAt: timestamp("created_at").default(sql`(CURRENT_TIMESTAMP)`),
-  updatedAt: timestamp("updated_at").default(sql`(datetime('now'))`),
+  customerInfo: text("customer_info", { mode: 'json' }),
+  statusHistory: text("status_history", { mode: 'json' }), // Array of status updates
+  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: 'timestamp' }).default(sql`(unixepoch())`),
 });
 
-export const tradeIns = pgTable("trade_ins", {
-  id: serial("id").primaryKey(),
+export const tradeIns = sqliteTable("trade_ins", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   deviceType: text("device_type").notNull(),
   brand: text("brand").notNull(),
   model: text("model").notNull(),
   age: text("age").notNull(),
   condition: text("condition").notNull(),
   estimatedValue: real("estimated_value").notNull(),
-  customerInfo: json("customer_info"),
-  pickupScheduled: boolean("pickup_scheduled").default(false),
+  customerInfo: text("customer_info", { mode: 'json' }),
+  pickupScheduled: integer("pickup_scheduled", { mode: 'boolean' }).default(false),
   status: text("status").notNull().default("quoted"), // quoted, scheduled, collected, processed
-  createdAt: timestamp("created_at").default(sql`(datetime('now'))`),
+  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(unixepoch())`),
 });
 
-export const fleetDevices = pgTable("fleet_devices", {
-  id: serial("id").primaryKey(),
+export const fleetDevices = sqliteTable("fleet_devices", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   companyId: text("company_id").notNull(),
   deviceId: text("device_id").notNull(),
   deviceModel: text("device_model").notNull(),
   assignedUser: text("assigned_user"),
   status: text("status").notNull().default("active"), // active, maintenance, retired
-  warrantyExpiry: timestamp("warranty_expiry"),
-  lastMaintenance: timestamp("last_maintenance"),
-  deploymentDate: timestamp("deployment_date").default(sql`(datetime('now'))`),
-  createdAt: timestamp("created_at").defaultNow(),
+  warrantyExpiry: integer("warranty_expiry", { mode: 'timestamp' }),
+  lastMaintenance: integer("last_maintenance", { mode: 'timestamp' }),
+  deploymentDate: integer("deployment_date", { mode: 'timestamp' }).default(sql`(unixepoch())`),
+  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(unixepoch())`),
 });
 
 // Zod schemas

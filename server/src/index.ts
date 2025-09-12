@@ -11,7 +11,10 @@ import rateLimit from "express-rate-limit";
 import * as Sentry from "@sentry/node";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
-import { registerRoutes } from "./routes";
+import { RedisStore } from "connect-redis";
+import { createClient } from "redis";
+import cors from "cors";
+import { registerRoutes } from "./routes/routes";
 import { storage } from "./storage";
 
 export async function createServer(): Promise<express.Express> {
@@ -46,6 +49,27 @@ export async function createServer(): Promise<express.Express> {
           }
         : undefined,
   });
+
+  // CORS middleware
+  const corsOptions = {
+    origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+      const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:5000'];
+
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  };
+
+  app.use(cors(corsOptions));
 
   // Security middleware
   app.use(helmet({
@@ -115,10 +139,7 @@ export async function createServer(): Promise<express.Express> {
     }
   });
 
-  // Session configuration with PostgreSQL store
-  const PgSession = connectPgSimple(session);
-
-  // Configure session store based on environment
+  // Session configuration with Redis store
   let sessionConfig: any = {
     secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
     resave: false,
@@ -130,9 +151,25 @@ export async function createServer(): Promise<express.Express> {
       maxAge: 24 * 60 * 60 * 1000 // 24 hours
     }
   };
-
-  if (process.env.DATABASE_URL) {
-    // Use PostgreSQL for session storage in production
+  
+  // Configure Redis client and store
+  if (process.env.REDIS_URL) {
+    const redisClient = createClient({
+      url: process.env.REDIS_URL
+    });
+  
+    redisClient.connect().catch(console.error);
+  
+    const redisStore = new RedisStore({
+      client: redisClient,
+      prefix: 'skavtech:sess:',
+      ttl: 24 * 60 * 60 // 24 hours
+    });
+  
+    sessionConfig.store = redisStore;
+  } else if (process.env.DATABASE_URL) {
+    // Fallback to PostgreSQL for session storage
+    const PgSession = connectPgSimple(session);
     sessionConfig.store = new PgSession({
       conString: process.env.DATABASE_URL,
       tableName: 'user_sessions',

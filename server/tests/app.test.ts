@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import type { Express } from 'express';
-import { createServer } from '../index';
+import { createServer } from '../src/index';
 
 let app: Express;
 let authToken: string;
@@ -35,7 +35,7 @@ describe('API Endpoints', () => {
     describe('User Registration', () => {
       it('should register a new user successfully', async () => {
         const res = await request(app)
-          .post('/api/auth/register')
+          .post('/api/auth/signup')
           .send({
             username: 'testuser',
             password: 'testpass123',
@@ -83,7 +83,7 @@ describe('API Endpoints', () => {
 
       it('should reject registration with invalid Kenyan phone number', async () => {
         const res = await request(app)
-          .post('/api/auth/register')
+          .post('/api/auth/signup')
           .send({
             username: 'invalidphone',
             password: 'testpass123',
@@ -99,7 +99,7 @@ describe('API Endpoints', () => {
 
       it('should reject registration with non-Kenyan country code', async () => {
         const res = await request(app)
-          .post('/api/auth/register')
+          .post('/api/auth/signup')
           .send({
             username: 'nonkenya',
             password: 'testpass123',
@@ -116,7 +116,7 @@ describe('API Endpoints', () => {
       it('should reject registration with duplicate username', async () => {
         // First registration
         await request(app)
-          .post('/api/auth/register')
+          .post('/api/auth/signup')
           .send({
             username: 'duplicateuser',
             password: 'testpass123',
@@ -129,7 +129,7 @@ describe('API Endpoints', () => {
 
         // Second registration with same username
         const res = await request(app)
-          .post('/api/auth/register')
+          .post('/api/auth/signup')
           .send({
             username: 'duplicateuser', // Same username
             password: 'testpass123',
@@ -144,7 +144,7 @@ describe('API Endpoints', () => {
 
       it('should reject registration with missing required fields', async () => {
         const res = await request(app)
-          .post('/api/auth/register')
+          .post('/api/auth/signup')
           .send({
             // Missing required fields
             password: 'testpass123',
@@ -159,7 +159,7 @@ describe('API Endpoints', () => {
       beforeAll(async () => {
         // Create a test user for login tests
         await request(app)
-          .post('/api/auth/register')
+          .post('/api/auth/signup')
           .send({
             username: 'logintest',
             password: 'loginpass123',
@@ -1040,7 +1040,7 @@ describe('API Endpoints', () => {
 
     it('should handle malformed JSON', async () => {
       const res = await request(app)
-        .post('/api/auth/register')
+        .post('/api/auth/signup')
         .set('Content-Type', 'application/json')
         .send('{invalid json}');
       expect(res.status).toBe(400);

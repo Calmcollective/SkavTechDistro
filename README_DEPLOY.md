@@ -9,25 +9,45 @@ This guide provides comprehensive instructions for deploying the Skavtech ICT ha
 ```
 Internet
     ↓
-  Nginx (Port 80/443)
-    ↓
-  ┌─────────────────┐
-  │   Frontend      │  ← React SPA (Port 80 internal)
-  │   (nginx:alpine)│
-  └─────────────────┘
-         ↓
-  ┌─────────────────┐
-  │   Backend       │  ← Node.js API (Port 4000 internal)
-  │   (node:alpine) │
-  └─────────────────┘
-         ↓
-  ┌─────────────────┐
-  │   Database      │  ← PostgreSQL (Port 5432 internal)
-  │ (postgres:alpine)│
-  └─────────────────┘
+   Nginx (Port 80/443)
+     ↓
+   ┌─────────────────┐
+   │   Frontend      │  ← React SPA (Port 80 internal)
+   │   (nginx:alpine)│
+   └─────────────────┘
+          ↓
+   ┌─────────────────┐    ┌─────────────────┐
+   │   Backend       │    │   Redis         │  ← Session storage & caching
+   │   (node:alpine) │    │   (redis:alpine)│
+   └─────────────────┘    └─────────────────┘
+          ↓                        ↓
+   ┌─────────────────┐
+   │   Database      │  ← PostgreSQL (Port 5432 internal)
+   │ (postgres:alpine)│
+   └─────────────────┘
 ```
 
-## 📋 Prerequisites
+## ✨ Key Production Features
+
+### 🔐 Security Enhancements
+- **CORS Protection**: Configured with allowed origins for production domains
+- **Session Security**: Redis-based session storage with secure cookies (HttpOnly, Secure, SameSite)
+- **Rate Limiting**: API rate limiting with different limits for auth vs general endpoints
+- **Security Headers**: Comprehensive security headers via Nginx and Helmet middleware
+
+### 🚀 Performance Optimizations
+- **Redis Caching**: Session storage and future caching capabilities
+- **Persistent Storage**: Docker volumes for database, uploads, and logs
+- **Health Checks**: Comprehensive health monitoring for all services
+- **Optimized Builds**: Production-optimized Docker images with multi-stage builds
+
+### 🔧 Configuration Management
+- **Environment Variables**: Production-ready environment configuration
+- **Frontend API Integration**: Configurable API URLs for different environments
+- **Database Persistence**: Persistent PostgreSQL with proper initialization
+- **File Upload Management**: Dedicated volume for secure file storage
+
+##  Prerequisites
 
 - **Docker**: Version 20.10 or later
 - **Docker Compose**: Version 2.0 or later
@@ -35,6 +55,94 @@ Internet
 - **SSL Certificate**: Let's Encrypt or commercial certificate
 - **Server**: Ubuntu 20.04+ / CentOS 7+ / Debian 10+ with at least 2GB RAM
 - **Kenyan Hosting**: Consider Nairobi-based providers (Safaricom Cloud, Liquid Telecom, etc.)
+
+## 🔄 Replit vs Production Differences
+
+### Key Differences Addressed
+
+| Aspect | Replit (Development) | Production (Docker) |
+|--------|---------------------|-------------------|
+| **Networking** | Auto-exposed ports | Nginx reverse proxy on ports 80/443 |
+| **Environment** | Replit secrets | `.env.production` file |
+| **Database** | Replit's default DB | Persistent PostgreSQL with Docker volumes |
+| **File Storage** | Ephemeral `/tmp` | Persistent Docker volumes (`/app/uploads`) |
+| **Sessions** | Single-instance memory | Redis-backed multi-instance sessions |
+| **API Routing** | Direct backend access | Nginx proxies `/api/*` to backend |
+| **CORS** | Replit's CORS handling | Explicit CORS configuration |
+| **Frontend API** | Hardcoded Replit URLs | Environment-based API URLs |
+
+### Migration Benefits
+- **Scalability**: Redis sessions support horizontal scaling
+- **Persistence**: Data survives container restarts
+- **Security**: Proper HTTPS, security headers, and CORS
+- **Performance**: Optimized Docker images and caching
+- **Reliability**: Health checks and proper error handling
+
+## 🧪 Testing
+
+### Running Tests
+
+The application includes comprehensive test suites for different levels of testing:
+
+#### Unit Tests
+```bash
+# Run unit tests for client
+npm run test:client
+
+# Run unit tests for server
+npm run test:server
+
+# Run all unit tests
+npm run test
+
+# Run tests in watch mode
+npm run test:client:watch
+npm run test:server:watch
+```
+
+#### Integration Tests
+```bash
+# Run backend integration tests
+npm run test:server:int
+
+# Integration tests cover:
+# - API endpoints (/api/auth/signup, /api/auth/login, /api/products, /api/tradein)
+# - Database operations
+# - Authentication middleware
+# - Input validation
+```
+
+#### End-to-End Tests
+```bash
+# Run E2E tests with Cypress
+npm run test:e2e
+
+# Open Cypress test runner (interactive)
+npm run test:e2e:open
+
+# E2E tests cover:
+# - User signup/login flow
+# - Product browsing and comparison
+# - Trade-in tool estimate submission
+# - Admin dashboard functionality
+# - Security features and validation
+```
+
+#### Test Configuration
+```bash
+# Clear test cache
+npm run test:clear-cache
+
+# Run tests with coverage
+npm run test:client -- --coverage
+npm run test:server -- --coverage
+```
+
+### Test Environments
+
+- **Development**: Tests run against local SQLite database
+- **CI/CD**: Tests run in isolated containers
+- **Production**: Integration tests validate production deployments
 
 ## 🔧 Quick Start
 
@@ -67,13 +175,73 @@ nano .env.production.local
 - `JWT_SECRET`: Generate a different 64+ character random string
 - `ALLOWED_ORIGINS`: Set to your domain(s)
 
-### 3. Database Initialization
+### 3. Database Migrations
 
-Create the database initialization file:
+The application uses Drizzle ORM with safe SQL migrations for database schema management.
+
+#### Migration Workflow
 
 ```bash
-# Copy migration to docker directory
-cp migrations/0000_colossal_lady_mastermind.sql docker/init.sql
+# Generate new migration (when schema changes)
+npm run db:generate
+
+# Apply migrations to database
+npm run db:migrate
+
+# Check migration status
+npx drizzle-kit check
+```
+
+#### Production Migration Setup
+
+```bash
+# For production deployment, ensure migrations run during container startup
+# The docker-compose.prod.yaml includes migration execution in the backend service
+
+# Manual migration in production
+docker compose -f docker/docker-compose.prod.yaml exec backend npm run db:migrate
+
+# Check migration status
+docker compose -f docker/docker-compose.prod.yaml exec backend npx drizzle-kit check
+```
+
+#### Migration Files
+
+- **Location**: `./migrations/` directory
+- **Naming**: `0001_init.sql`, `0002_add_user_roles.sql`, etc.
+- **Safety**: Migrations are forward-only and should be tested in staging first
+- **Backup**: Always backup database before running migrations in production
+
+#### Example Migration File Structure
+
+```sql
+-- migrations/0001_init.sql
+CREATE TABLE "users" (
+  "id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+  "username" text NOT NULL,
+  "password" text NOT NULL,
+  "role" text DEFAULT 'customer' NOT NULL,
+  "email" text,
+  "first_name" text,
+  "last_name" text,
+  "phone_number" text,
+  "country_code" text,
+  "city" text,
+  "created_at" timestamp DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "users_username_unique" UNIQUE("username")
+);
+--> statement-breakpoint
+-- Add more tables and constraints...
+```
+
+#### Migration Best Practices
+
+1. **Test migrations** in development environment first
+2. **Backup database** before running migrations in production
+3. **Use descriptive names** for migration files
+4. **Avoid destructive changes** in production migrations
+5. **Run migrations during low-traffic periods**
+6. **Monitor migration execution** and rollback if necessary
 ```
 
 ### 4. SSL Certificate Setup (Optional but Recommended)
@@ -298,8 +466,21 @@ The nginx configuration includes:
 
 ## 🚀 Scaling & Performance
 
-### Horizontal Scaling
+### Backend Scaling with Multiple Replicas
 
+#### Docker Compose Scaling
+```bash
+# Scale backend to 3 replicas
+docker compose -f docker/docker-compose.prod.yaml up -d --scale backend=3
+
+# Check replica status
+docker compose -f docker/docker-compose.prod.yaml ps backend
+
+# Scale down to 1 replica
+docker compose -f docker/docker-compose.prod.yaml up -d --scale backend=1
+```
+
+#### Load Balancing Configuration
 ```yaml
 # docker-compose.prod.yaml (modify for scaling)
 services:
@@ -313,6 +494,83 @@ services:
         reservations:
           cpus: '0.5'
           memory: 256M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  nginx:
+    # Nginx automatically load balances to backend replicas
+    depends_on:
+      - backend
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+```
+
+#### Redis for Session Management
+```yaml
+# Redis service configuration (already included)
+redis:
+  image: redis:7-alpine
+  restart: unless-stopped
+  volumes:
+    - redis_data:/data
+  networks:
+    - skavtech-network
+  healthcheck:
+    test: ["CMD", "redis-cli", "ping"]
+    interval: 30s
+    timeout: 10s
+    retries: 3
+  # Security: Don't expose Redis port externally
+  # ports:
+  #   - "6379:6379"
+```
+
+#### Session Store Configuration
+```javascript
+// server/src/index.ts - Redis session store (already configured)
+if (process.env.REDIS_URL) {
+  const redisClient = createClient({
+    url: process.env.REDIS_URL
+  });
+
+  redisClient.connect().catch(console.error);
+
+  const redisStore = new RedisStore({
+    client: redisClient,
+    prefix: 'skavtech:sess:',
+    ttl: 24 * 60 * 60 // 24 hours
+  });
+
+  sessionConfig.store = redisStore;
+}
+```
+
+### Scaling Benefits
+- **High Availability**: Multiple backend replicas prevent single points of failure
+- **Load Distribution**: Nginx automatically distributes requests across replicas
+- **Session Persistence**: Redis ensures sessions work across all replicas
+- **Zero Downtime**: Scale up/down without service interruption
+- **Resource Optimization**: Allocate resources based on load requirements
+
+### Monitoring Scaled Deployments
+```bash
+# Monitor all backend replicas
+docker compose -f docker/docker-compose.prod.yaml logs -f backend
+
+# Check Redis connectivity
+docker compose -f docker/docker-compose.prod.yaml exec redis redis-cli ping
+
+# Monitor resource usage
+docker stats $(docker compose -f docker/docker-compose.prod.yaml ps -q backend)
 ```
 
 ### Database Optimization

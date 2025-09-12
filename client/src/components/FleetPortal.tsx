@@ -5,17 +5,24 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Download, Headphones, RotateCcw, Wrench, Activity } from "lucide-react";
-import type { FleetDevice } from "@shared/schema";
+import type { FleetDevice } from "../../../shared/schema";
+
+interface FleetStats {
+  total: number;
+  active: number;
+  maintenance: number;
+  expired: number;
+}
 
 export default function FleetPortal() {
   // In a real app, this would come from user authentication
   const companyId = "CORP-001";
 
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { data: stats, isLoading: statsLoading } = useQuery<FleetStats>({
     queryKey: [`/api/fleet/${companyId}/stats`],
   });
 
-  const { data: devices, isLoading: devicesLoading } = useQuery({
+  const { data: devices, isLoading: devicesLoading } = useQuery<FleetDevice[]>({
     queryKey: [`/api/fleet/${companyId}`],
   });
 
@@ -33,9 +40,9 @@ export default function FleetPortal() {
     );
   };
 
-  const isWarrantyExpired = (expiryDate: string | null) => {
+  const isWarrantyExpired = (expiryDate: Date | null) => {
     if (!expiryDate) return false;
-    return new Date(expiryDate) < new Date();
+    return expiryDate < new Date();
   };
 
   if (statsLoading || devicesLoading) {
@@ -127,7 +134,7 @@ export default function FleetPortal() {
                           {device.warrantyExpiry ? (
                             <span className={isWarrantyExpired(device.warrantyExpiry) ? "text-red-600" : "text-green-600"}>
                               {isWarrantyExpired(device.warrantyExpiry) ? "Expired" : "Valid until"}{" "}
-                              {new Date(device.warrantyExpiry).toLocaleDateString()}
+                              {device.warrantyExpiry.toLocaleDateString()}
                             </span>
                           ) : (
                             "No warranty"

@@ -1,35 +1,33 @@
 CREATE TABLE "devices" (
-	"id" serial PRIMARY KEY NOT NULL,
+	"id" INTEGER PRIMARY KEY AUTOINCREMENT,
 	"serial_number" text NOT NULL,
 	"model" text NOT NULL,
 	"brand" text NOT NULL,
 	"device_type" text NOT NULL,
 	"status" text DEFAULT 'received' NOT NULL,
 	"assigned_technician" text,
-	"customer_info" json,
+	"customer_info" text,
 	"repair_notes" text,
 	"estimated_value" real,
-	"completion_date" timestamp,
-	"created_at" timestamp DEFAULT now(),
-	"updated_at" timestamp DEFAULT now(),
+	"completion_date" integer,
+	"created_at" integer DEFAULT (unixepoch()),
+	"updated_at" integer DEFAULT (unixepoch()),
 	CONSTRAINT "devices_serial_number_unique" UNIQUE("serial_number")
 );
---> statement-breakpoint
 CREATE TABLE "fleet_devices" (
-	"id" serial PRIMARY KEY NOT NULL,
+	"id" INTEGER PRIMARY KEY AUTOINCREMENT,
 	"company_id" text NOT NULL,
 	"device_id" text NOT NULL,
 	"device_model" text NOT NULL,
 	"assigned_user" text,
 	"status" text DEFAULT 'active' NOT NULL,
-	"warranty_expiry" timestamp,
-	"last_maintenance" timestamp,
-	"deployment_date" timestamp DEFAULT now(),
-	"created_at" timestamp DEFAULT now()
+	"warranty_expiry" integer,
+	"last_maintenance" integer,
+	"deployment_date" integer DEFAULT (unixepoch()),
+	"created_at" integer DEFAULT (unixepoch())
 );
---> statement-breakpoint
 CREATE TABLE "products" (
-	"id" serial PRIMARY KEY NOT NULL,
+	"id" INTEGER PRIMARY KEY AUTOINCREMENT,
 	"name" text NOT NULL,
 	"brand" text NOT NULL,
 	"category" text NOT NULL,
@@ -37,47 +35,44 @@ CREATE TABLE "products" (
 	"price" real NOT NULL,
 	"original_price" real,
 	"description" text,
-	"specifications" json,
+	"specifications" text,
 	"warranty_years" integer DEFAULT 1,
 	"stock_quantity" integer DEFAULT 0,
 	"image_url" text,
-	"is_active" boolean DEFAULT true,
-	"created_at" timestamp DEFAULT now()
+	"is_active" integer DEFAULT 1,
+	"created_at" integer DEFAULT (unixepoch())
 );
---> statement-breakpoint
 CREATE TABLE "repair_tickets" (
-	"id" serial PRIMARY KEY NOT NULL,
+	"id" INTEGER PRIMARY KEY AUTOINCREMENT,
 	"ticket_id" text NOT NULL,
 	"serial_number" text NOT NULL,
 	"device_model" text NOT NULL,
 	"issue_description" text NOT NULL,
 	"status" text DEFAULT 'received' NOT NULL,
 	"assigned_technician" text,
-	"estimated_completion" timestamp,
+	"estimated_completion" integer,
 	"repair_notes" text,
-	"customer_info" json,
-	"status_history" json,
-	"created_at" timestamp DEFAULT now(),
-	"updated_at" timestamp DEFAULT now(),
+	"customer_info" text,
+	"status_history" text,
+	"created_at" integer DEFAULT (unixepoch()),
+	"updated_at" integer DEFAULT (unixepoch()),
 	CONSTRAINT "repair_tickets_ticket_id_unique" UNIQUE("ticket_id")
 );
---> statement-breakpoint
 CREATE TABLE "trade_ins" (
-	"id" serial PRIMARY KEY NOT NULL,
+	"id" INTEGER PRIMARY KEY AUTOINCREMENT,
 	"device_type" text NOT NULL,
 	"brand" text NOT NULL,
 	"model" text NOT NULL,
 	"age" text NOT NULL,
 	"condition" text NOT NULL,
 	"estimated_value" real NOT NULL,
-	"customer_info" json,
-	"pickup_scheduled" boolean DEFAULT false,
+	"customer_info" text,
+	"pickup_scheduled" integer DEFAULT 0,
 	"status" text DEFAULT 'quoted' NOT NULL,
-	"created_at" timestamp DEFAULT now()
+	"created_at" integer DEFAULT (unixepoch())
 );
---> statement-breakpoint
 CREATE TABLE "users" (
-	"id" serial PRIMARY KEY NOT NULL,
+	"id" INTEGER PRIMARY KEY AUTOINCREMENT,
 	"username" text NOT NULL,
 	"password" text NOT NULL,
 	"role" text DEFAULT 'customer' NOT NULL,
@@ -94,24 +89,21 @@ CREATE TABLE "users" (
 	"company_size" text,
 	"job_title" text,
 	"primary_interest" text,
-	"communication_preferences" json,
-	"newsletter" boolean DEFAULT true,
-	"agree_to_marketing" boolean DEFAULT false,
-	"created_at" timestamp DEFAULT now(),
+	"communication_preferences" text,
+	"newsletter" integer DEFAULT 1,
+	"agree_to_marketing" integer DEFAULT 0,
+	"created_at" integer DEFAULT (unixepoch()),
 	CONSTRAINT "users_username_unique" UNIQUE("username")
 );
---> statement-breakpoint
 CREATE TABLE "warranties" (
-	"id" serial PRIMARY KEY NOT NULL,
+	"id" INTEGER PRIMARY KEY AUTOINCREMENT,
 	"serial_number" text NOT NULL,
 	"product_id" integer,
-	"purchase_date" timestamp NOT NULL,
-	"expiry_date" timestamp NOT NULL,
+	"purchase_date" integer NOT NULL,
+	"expiry_date" integer NOT NULL,
 	"coverage" text NOT NULL,
 	"invoice_number" text,
 	"customer_email" text,
-	"is_active" boolean DEFAULT true,
-	"created_at" timestamp DEFAULT now()
+	"is_active" integer DEFAULT 1,
+	"created_at" integer DEFAULT (unixepoch())
 );
---> statement-breakpoint
-ALTER TABLE "warranties" ADD CONSTRAINT "warranties_product_id_products_id_fk" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE no action ON UPDATE no action;
